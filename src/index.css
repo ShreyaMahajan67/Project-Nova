@@ -6,50 +6,50 @@
 
 @layer base {
   :root {
-    /* Light Mode - Pink to Purple Theme */
-    --background: 0 100% 84%; /* #FFACAC - Light Pink Salmon */
-    --foreground: 266 55% 26%; /* #3E1E68 - Dark Purple */
+    /* Light Mode - Purple to Pink Theme (Reversed) */
+    --background: 278 43% 33%; /* #5D2F77 - Purple (now dominant) */
+    --foreground: 0 100% 88%; /* Light Pink (now text) */
 
-    --card: 0 100% 88%; /* Lighter variation of FFACAC */
-    --card-foreground: 266 55% 26%;
+    --card: 266 55% 26%; /* #3E1E68 - Dark Purple for cards */
+    --card-foreground: 0 100% 84%;
 
-    --popover: 0 100% 88%;
-    --popover-foreground: 266 55% 26%;
+    --popover: 266 55% 26%;
+    --popover-foreground: 0 100% 84%;
 
-    --primary: 336 73% 62%; /* #E45A92 - Medium Pink Magenta */
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 100% 84%; /* #FFACAC - Light Pink (now primary) */
+    --primary-foreground: 266 55% 26%;
 
-    --secondary: 0 100% 88%;
-    --secondary-foreground: 266 55% 26%;
+    --secondary: 266 55% 26%;
+    --secondary-foreground: 0 100% 84%;
 
-    --muted: 0 100% 90%;
-    --muted-foreground: 278 43% 33%; /* #5D2F77 - Purple */
+    --muted: 278 43% 40%;
+    --muted-foreground: 0 100% 88%;
 
-    --accent-mint: 0 100% 84%; /* Using light pink for consistency */
-    --accent-lilac: 278 43% 33%; /* #5D2F77 - Purple */
-    --accent-peach: 336 73% 62%; /* #E45A92 - Medium Pink */
+    --accent-mint: 278 43% 33%; /* Purple for consistency */
+    --accent-lilac: 0 100% 84%; /* Light Pink */
+    --accent-peach: 336 73% 62%; /* Medium Pink stays */
 
-    --accent: 278 43% 33%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 100% 84%;
+    --accent-foreground: 266 55% 26%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 60% 80%;
-    --input: 0 60% 80%;
-    --ring: 336 73% 62%;
+    --border: 278 43% 40%;
+    --input: 278 43% 40%;
+    --ring: 0 100% 84%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 100% 84%), hsl(0 100% 88%));
-    --gradient-card: linear-gradient(135deg, hsl(0 100% 88%), hsl(0 100% 90%));
-    --gradient-mint: linear-gradient(135deg, hsl(0 100% 84%), hsl(0 100% 88%));
-    --gradient-lilac: linear-gradient(135deg, hsl(278 43% 33%), hsl(278 43% 40%));
+    --gradient-primary: linear-gradient(135deg, hsl(278 43% 33%), hsl(266 55% 26%));
+    --gradient-card: linear-gradient(135deg, hsl(266 55% 26%), hsl(266 55% 22%));
+    --gradient-mint: linear-gradient(135deg, hsl(278 43% 33%), hsl(278 43% 40%));
+    --gradient-lilac: linear-gradient(135deg, hsl(0 100% 84%), hsl(0 100% 88%));
     --gradient-peach: linear-gradient(135deg, hsl(336 73% 62%), hsl(336 73% 70%));
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px hsl(0 100% 88% / 0.4);
-    --shadow-card: 0 8px 32px hsl(0 60% 80% / 0.3);
-    --shadow-float: 0 16px 48px hsl(0 60% 75% / 0.25);
+    --shadow-soft: 0 4px 20px hsl(266 55% 15% / 0.6);
+    --shadow-card: 0 8px 32px hsl(266 55% 10% / 0.5);
+    --shadow-float: 0 16px 48px hsl(266 55% 8% / 0.4);
 
     --radius: 1rem;
 
