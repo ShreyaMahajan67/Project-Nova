@@ -1,10 +1,12 @@
-import React from 'react';
-import { Target, Plus, Trophy, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Target, Plus, Trophy, Calendar, Filter } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Habits = () => {
+  const [filter, setFilter] = useState('all');
   const mockHabits = [
     {
       id: 1,
@@ -59,6 +61,10 @@ const Habits = () => {
 
   const getDaysOfWeek = () => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  const filteredHabits = filter === 'all' 
+    ? mockHabits 
+    : mockHabits.filter(habit => habit.category.toLowerCase() === filter.toLowerCase());
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -67,10 +73,24 @@ const Habits = () => {
           <h1 className="text-3xl font-bold">Habits & Streaks</h1>
           <p className="text-muted-foreground mt-1">Build consistency, one day at a time</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          New Habit
-        </Button>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter habits" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Habits</SelectItem>
+              <SelectItem value="study">Study</SelectItem>
+              <SelectItem value="self-care">Self-Care</SelectItem>
+              <SelectItem value="hobbies">Hobbies</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Habit
+          </Button>
+        </div>
       </div>
 
       {/* Overview Stats */}
@@ -96,7 +116,13 @@ const Habits = () => {
 
       {/* Habits List */}
       <div className="space-y-4">
-        {mockHabits.map((habit) => (
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Your Habits</h2>
+          <span className="text-sm text-muted-foreground">
+            {filteredHabits.length} of {mockHabits.length} habits
+          </span>
+        </div>
+        {filteredHabits.map((habit) => (
           <Card key={habit.id} className="glass-card p-6">
             <div className="flex flex-col lg:flex-row lg:items-center gap-6">
               {/* Habit Info */}

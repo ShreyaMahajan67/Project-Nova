@@ -1,15 +1,29 @@
-import React from 'react';
-import { Plus, Calendar, TrendingUp, Heart, Target } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Calendar, TrendingUp, Heart, Target, CheckCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import AddTaskModal from '@/components/modals/AddTaskModal';
+import AddMoodModal from '@/components/modals/AddMoodModal';
 
 const Dashboard = () => {
-  const mockTasks = [
-    { id: 1, title: 'Complete Math Assignment', category: 'study', time: '2:00 PM', completed: false },
-    { id: 2, title: 'Meditation Session', category: 'self-care', time: '6:00 PM', completed: true },
-    { id: 3, title: 'Guitar Practice', category: 'hobbies', time: '7:30 PM', completed: false },
-  ];
+  const [tasks, setTasks] = useState([
+    { id: 1, title: 'Complete math homework', category: 'study', completed: false, priority: 'high' },
+    { id: 2, title: 'Morning meditation', category: 'self-care', completed: true, priority: 'medium' },
+    { id: 3, title: 'Guitar practice session', category: 'hobbies', completed: false, priority: 'low' },
+    { id: 4, title: 'Read for 30 minutes', category: 'study', completed: false, priority: 'medium' },
+  ]);
+
+  const addTask = (newTask: any) => {
+    setTasks([...tasks, newTask]);
+  };
+
+  const toggleTask = (taskId: number) => {
+    setTasks(tasks.map(task => 
+      task.id === taskId ? { ...task, completed: !task.completed } : task
+    ));
+  };
 
   const mockHabits = [
     { name: 'Daily Exercise', streak: 7, target: 7 },
@@ -34,10 +48,18 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold">Good morning, Alex! 🌸</h1>
           <p className="text-muted-foreground mt-1">Let's make today amazing</p>
         </div>
-        <Button className="self-start sm:self-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Quick Add
-        </Button>
+        <div className="flex items-center gap-2">
+          <AddTaskModal 
+            trigger={
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Quick Add
+              </Button>
+            }
+            onAddTask={addTask}
+          />
+          <AddMoodModal />
+        </div>
       </div>
 
       {/* Daily Quote */}
@@ -58,31 +80,34 @@ const Dashboard = () => {
             <h2 className="text-xl font-semibold">Today's Tasks</h2>
           </div>
           <div className="space-y-3">
-            {mockTasks.map((task) => (
+            {tasks.map((task) => (
               <div 
                 key={task.id} 
-                className={`p-3 rounded-lg flex items-center justify-between ${getCategoryClass(task.category)}`}
+                className={`p-4 rounded-lg ${getCategoryClass(task.category)} ${
+                  task.completed ? 'opacity-50' : ''
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="checkbox" 
-                    checked={task.completed}
-                    className="w-4 h-4 rounded"
-                  />
-                  <div>
-                    <p className={`font-medium ${task.completed ? 'line-through opacity-70' : ''}`}>
-                      {task.title}
-                    </p>
-                    <p className="text-sm opacity-80">{task.time}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      checked={task.completed}
+                      onCheckedChange={() => toggleTask(task.id)}
+                    />
+                    <div className={`w-2 h-2 rounded-full ${
+                      task.priority === 'high' ? 'bg-red-400' :
+                      task.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'
+                    }`} />
+                    <div>
+                      <h4 className={`font-medium ${task.completed ? 'line-through' : ''}`}>
+                        {task.title}
+                      </h4>
+                      <p className="text-sm opacity-80 capitalize">{task.category}</p>
+                    </div>
                   </div>
+                  <CheckCircle className={`w-5 h-5 ${
+                    task.completed ? 'text-green-400' : 'text-muted-foreground'
+                  }`} />
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full bg-black/10 ${
-                  task.category === 'study' ? 'text-orange-800' :
-                  task.category === 'self-care' ? 'text-green-800' :
-                  'text-purple-800'
-                }`}>
-                  {task.category}
-                </span>
               </div>
             ))}
           </div>
@@ -147,9 +172,14 @@ const Dashboard = () => {
       </div>
 
       {/* Floating Action Button */}
-      <Button className="floating-button">
-        <Plus className="w-6 h-6" />
-      </Button>
+      <AddTaskModal 
+        trigger={
+          <button className="floating-button">
+            <Plus className="w-6 h-6" />
+          </button>
+        }
+        onAddTask={addTask}
+      />
     </div>
   );
 };

@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import AddEventModal from '@/components/modals/AddEventModal';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'week' | 'month'>('week');
-
-  const mockEvents = [
+  const [view, setView] = useState<'day' | 'week' | 'month'>('week');
+  const [events, setEvents] = useState([
     { id: 1, title: 'Math Quiz', category: 'study', time: '10:00 AM', date: '2024-01-15' },
     { id: 2, title: 'Yoga Class', category: 'self-care', time: '6:00 PM', date: '2024-01-15' },
     { id: 3, title: 'Guitar Practice', category: 'hobbies', time: '7:30 PM', date: '2024-01-16' },
     { id: 4, title: 'Study Session', category: 'study', time: '2:00 PM', date: '2024-01-17' },
-  ];
+  ]);
+
+  const addEvent = (newEvent: any) => {
+    setEvents([...events, newEvent]);
+  };
+
+  const getTimeSpentByCategory = () => {
+    const categories = { study: 0, 'self-care': 0, hobbies: 0, work: 0, personal: 0 };
+    events.forEach(event => {
+      if (categories[event.category as keyof typeof categories] !== undefined) {
+        categories[event.category as keyof typeof categories] += 1; // Simplified: 1 hour per event
+      }
+    });
+    return categories;
+  };
+
+  const timeSpent = getTimeSpentByCategory();
 
   const getCategoryClass = (category: string) => {
     switch (category) {
@@ -40,10 +57,33 @@ const Calendar = () => {
     return days;
   };
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
+    if (view === 'day') {
+      newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (view === 'week') {
+      newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else if (view === 'month') {
+      newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+    }
     setCurrentDate(newDate);
+  };
+
+  const getMonthDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      days.push(day);
+    }
+    return days;
   };
 
   return (
@@ -57,6 +97,14 @@ const Calendar = () => {
         
         <div className="flex items-center gap-2">
           <div className="flex bg-secondary rounded-lg p-1">
+            <Button
+              variant={view === 'day' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setView('day')}
+              className="text-xs"
+            >
+              Day
+            </Button>
             <Button
               variant={view === 'week' ? 'default' : 'ghost'}
               size="sm"
@@ -74,29 +122,65 @@ const Calendar = () => {
               Month
             </Button>
           </div>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Event
-          </Button>
+          <AddEventModal onAddEvent={addEvent} />
         </div>
       </div>
 
       {/* Navigation */}
       <Card className="glass-card p-4">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('prev')}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
           <h2 className="text-xl font-semibold">
-            {view === 'week' ? formatMonth(currentDate) : formatMonth(currentDate)}
+            {view === 'day' ? currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) :
+             view === 'week' ? formatMonth(currentDate) : 
+             formatMonth(currentDate)}
           </h2>
           
-          <Button variant="ghost" size="sm" onClick={() => navigateWeek('next')}>
+          <Button variant="ghost" size="sm" onClick={() => navigate('next')}>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </Card>
+
+      {/* Day View */}
+      {view === 'day' && (
+        <Card className="glass-card p-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">
+              {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </h3>
+            <div className="space-y-3">
+              {events
+                .filter(event => {
+                  const eventDate = new Date(event.date);
+                  return eventDate.toDateString() === currentDate.toDateString();
+                })
+                .map(event => (
+                  <div
+                    key={event.id}
+                    className={`p-4 rounded-lg ${getCategoryClass(event.category)}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{event.title}</h4>
+                        <p className="text-sm opacity-80">{event.time}</p>
+                      </div>
+                      <span className="text-xs px-2 py-1 rounded-full bg-black/10 capitalize">
+                        {event.category}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              {events.filter(event => new Date(event.date).toDateString() === currentDate.toDateString()).length === 0 && (
+                <p className="text-muted-foreground text-center py-8">No events scheduled for this day</p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Week View */}
       {view === 'week' && (
@@ -118,7 +202,7 @@ const Calendar = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  {mockEvents
+                  {events
                     .filter(event => {
                       const eventDate = new Date(event.date);
                       return eventDate.toDateString() === day.toDateString();
@@ -139,32 +223,114 @@ const Calendar = () => {
         </Card>
       )}
 
+      {/* Month View */}
+      {view === 'month' && (
+        <Card className="glass-card p-6">
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-sm font-medium text-muted-foreground p-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {getMonthDays().map((day, index) => {
+              const dayEvents = events.filter(event => {
+                const eventDate = new Date(event.date);
+                return eventDate.toDateString() === day.toDateString();
+              });
+              const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+              const isToday = day.toDateString() === new Date().toDateString();
+              
+              return (
+                <div
+                  key={index}
+                  className={`min-h-[100px] p-2 border rounded ${
+                    isCurrentMonth ? 'bg-card' : 'bg-muted/50'
+                  } ${isToday ? 'ring-2 ring-primary' : ''}`}
+                >
+                  <div className={`text-sm font-medium mb-1 ${
+                    isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'
+                  } ${isToday ? 'text-primary' : ''}`}>
+                    {day.getDate()}
+                  </div>
+                  <div className="space-y-1">
+                    {dayEvents.slice(0, 2).map(event => (
+                      <div
+                        key={event.id}
+                        className={`text-xs p-1 rounded truncate ${getCategoryClass(event.category)}`}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
+                    {dayEvents.length > 2 && (
+                      <div className="text-xs text-muted-foreground">
+                        +{dayEvents.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* Time Tracking Summary */}
+      <Card className="glass-card p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5" />
+          Time Summary
+        </h3>
+        <div className="space-y-4">
+          {Object.entries(timeSpent).map(([category, hours]) => (
+            <div key={category} className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="capitalize">{category.replace('-', ' ')}</span>
+                <span>{hours}h</span>
+              </div>
+              <Progress 
+                value={(hours / Math.max(...Object.values(timeSpent))) * 100} 
+                className="h-2" 
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Upcoming Events */}
       <Card className="glass-card p-6">
         <h3 className="text-lg font-semibold mb-4">Upcoming Events</h3>
         <div className="space-y-3">
-          {mockEvents.map(event => (
-            <div
-              key={event.id}
-              className={`p-4 rounded-lg ${getCategoryClass(event.category)}`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium">{event.title}</h4>
-                  <p className="text-sm opacity-80">
-                    {new Date(event.date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })} at {event.time}
-                  </p>
+          {events
+            .filter(event => new Date(event.date) >= new Date())
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 5)
+            .map(event => (
+              <div
+                key={event.id}
+                className={`p-4 rounded-lg ${getCategoryClass(event.category)}`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium">{event.title}</h4>
+                    <p className="text-sm opacity-80">
+                      {new Date(event.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })} at {event.time}
+                    </p>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full bg-black/10 capitalize">
+                    {event.category}
+                  </span>
                 </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-black/10 capitalize">
-                  {event.category}
-                </span>
               </div>
-            </div>
-          ))}
+            ))}
+          {events.filter(event => new Date(event.date) >= new Date()).length === 0 && (
+            <p className="text-muted-foreground text-center py-4">No upcoming events</p>
+          )}
         </div>
       </Card>
     </div>
