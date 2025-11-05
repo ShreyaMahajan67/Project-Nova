@@ -27,17 +27,15 @@ const AddTaskModal = ({ trigger, onAddTask }: AddTaskModalProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title && category) {
-      const newTask = {
-        id: Math.random().toString(36).substr(2, 9),
+      const taskData = {
         title,
         description,
         category,
         priority,
         completed: false,
-        dueDate: dueDate?.toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
+        dueDate: dueDate?.toISOString(),
       };
-      onAddTask?.(newTask);
+      onAddTask?.(taskData);
       setOpen(false);
       // Reset form
       setTitle('');

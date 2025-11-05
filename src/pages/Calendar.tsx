@@ -1,35 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import AddEventModal from '@/components/modals/AddEventModal';
+import { tasksApi, analyticsApi, eventsApi } from '@/services/api';
+import { Event, TimeAnalytics, Task } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import AddTaskModal from '@/components/modals/AddTaskModal';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
-  const [events, setEvents] = useState([
-    { id: 1, title: 'Math Quiz', category: 'study', time: '10:00 AM', date: '2024-01-15' },
-    { id: 2, title: 'Yoga Class', category: 'self-care', time: '6:00 PM', date: '2024-01-15' },
-    { id: 3, title: 'Guitar Practice', category: 'hobbies', time: '7:30 PM', date: '2024-01-16' },
-    { id: 4, title: 'Study Session', category: 'study', time: '2:00 PM', date: '2024-01-17' },
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [timeSpent, setTimeSpent] = useState<TimeAnalytics[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const addEvent = (newEvent: any) => {
-    setEvents([...events, newEvent]);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [eventsData, analyticsData] = await Promise.all([
+        eventsApi.getEvents(),
+        analyticsApi.getTimeSummary(),
+      ]);
+      setEvents(eventsData);
+      setTimeSpent(analyticsData);
+    } catch (error) {
+      console.error('Error loading calendar data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load calendar data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getTimeSpentByCategory = () => {
-    const categories = { study: 0, 'self-care': 0, hobbies: 0, work: 0, personal: 0 };
-    events.forEach(event => {
-      if (categories[event.category as keyof typeof categories] !== undefined) {
-        categories[event.category as keyof typeof categories] += 1; // Simplified: 1 hour per event
+  const addTask = async (newTask: Omit<Task, 'id' | 'createdAt'>) => {
+      try {
+        const createdTask = await tasksApi.createTask(newTask);
+        setTasks([...tasks, createdTask]);
+        toast({
+          title: "Success",
+          description: "Task added successfully",
+        });
+      } catch (error) {
+        console.error('Error adding task:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add task",
+          variant: "destructive",
+        });
       }
-    });
-    return categories;
-  };
-
-  const timeSpent = getTimeSpentByCategory();
+    };
 
   const getCategoryClass = (category: string) => {
     switch (category) {
@@ -73,7 +103,6 @@ const Calendar = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
     
@@ -85,6 +114,16 @@ const Calendar = () => {
     }
     return days;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading calendar...</p>
+      </div>
+    );
+  }
+
+  const maxTimeSpent = Math.max(...timeSpent.map(t => t.totalMinutes), 1);
 
   return (
     <div className="space-y-6">
@@ -122,7 +161,15 @@ const Calendar = () => {
               Month
             </Button>
           </div>
-          <AddEventModal onAddEvent={addEvent} />
+          <AddTaskModal 
+                      trigger={
+                        <Button>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Quick Add
+                        </Button>
+                      }
+                      onAddTask={addTask}
+                    />
         </div>
       </div>
 
@@ -166,7 +213,7 @@ const Calendar = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium">{event.title}</h4>
-                        <p className="text-sm opacity-80">{event.time}</p>
+                        <p className="text-sm opacity-80">{event.startTime} - {event.endTime}</p>
                       </div>
                       <span className="text-xs px-2 py-1 rounded-full bg-black/10 capitalize">
                         {event.category}
@@ -213,7 +260,7 @@ const Calendar = () => {
                         className={`p-2 rounded text-xs ${getCategoryClass(event.category)}`}
                       >
                         <p className="font-medium truncate">{event.title}</p>
-                        <p className="opacity-80">{event.time}</p>
+                        <p className="opacity-80">{event.startTime}</p>
                       </div>
                     ))}
                 </div>
@@ -283,18 +330,22 @@ const Calendar = () => {
           Time Summary
         </h3>
         <div className="space-y-4">
-          {Object.entries(timeSpent).map(([category, hours]) => (
-            <div key={category} className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="capitalize">{category.replace('-', ' ')}</span>
-                <span>{hours}h</span>
+          {timeSpent.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No time data available yet</p>
+          ) : (
+            timeSpent.map((item) => (
+              <div key={item.category} className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="capitalize">{item.category.replace('-', ' ')}</span>
+                  <span>{Math.round(item.totalMinutes / 60)}h {item.totalMinutes % 60}m</span>
+                </div>
+                <Progress 
+                  value={(item.totalMinutes / maxTimeSpent) * 100} 
+                  className="h-2" 
+                />
               </div>
-              <Progress 
-                value={(hours / Math.max(...Object.values(timeSpent))) * 100} 
-                className="h-2" 
-              />
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </Card>
 
@@ -319,7 +370,7 @@ const Calendar = () => {
                         weekday: 'long', 
                         month: 'short', 
                         day: 'numeric' 
-                      })} at {event.time}
+                      })} at {event.startTime}
                     </p>
                   </div>
                   <span className="text-xs px-2 py-1 rounded-full bg-black/10 capitalize">

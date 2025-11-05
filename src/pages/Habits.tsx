@@ -1,54 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target, Plus, Trophy, Calendar, Filter } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { habitsApi } from '@/services/api';
+import { Habit } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 const Habits = () => {
   const [filter, setFilter] = useState('all');
-  const mockHabits = [
-    {
-      id: 1,
-      name: 'Morning Exercise',
-      description: '30 minutes of physical activity',
-      streak: 12,
-      bestStreak: 18,
-      completionRate: 85,
-      category: 'self-care',
-      weekProgress: [true, true, false, true, true, true, false]
-    },
-    {
-      id: 2,
-      name: 'Reading',
-      description: 'Read for 20 minutes daily',
-      streak: 5,
-      bestStreak: 14,
-      completionRate: 70,
-      category: 'hobbies',
-      weekProgress: [true, false, true, true, true, false, true]
-    },
-    {
-      id: 3,
-      name: 'Study Session',
-      description: 'Focused study time',
-      streak: 8,
-      bestStreak: 22,
-      completionRate: 92,
-      category: 'study',
-      weekProgress: [true, true, true, true, false, true, true]
-    },
-    {
-      id: 4,
-      name: 'Meditation',
-      description: '10 minutes mindfulness',
-      streak: 15,
-      bestStreak: 28,
-      completionRate: 88,
-      category: 'self-care',
-      weekProgress: [true, true, true, false, true, true, true]
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadHabits();
+  }, [filter]);
+
+  const loadHabits = async () => {
+    try {
+      setLoading(true);
+      const habitsData = await habitsApi.getHabits(filter);
+      setHabits(habitsData);
+    } catch (error) {
+      console.error('Error loading habits:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load habits",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const toggleHabit = async (habitId: string) => {
+    try {
+      const updatedHabit = await habitsApi.toggleHabit(habitId);
+      setHabits(habits.map(h => h.id === habitId ? updatedHabit : h));
+      toast({
+        title: "Success",
+        description: "Habit updated successfully",
+      });
+    } catch (error) {
+      console.error('Error toggling habit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update habit",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getCategoryClass = (category: string) => {
     switch (category) {
@@ -61,9 +64,16 @@ const Habits = () => {
 
   const getDaysOfWeek = () => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const filteredHabits = filter === 'all' 
-    ? mockHabits 
-    : mockHabits.filter(habit => habit.category.toLowerCase() === filter.toLowerCase());
+  const totalStreaks = habits.reduce((sum, h) => sum + h.streak, 0);
+  const bestStreak = Math.max(...habits.map(h => h.streak), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading habits...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,7 +96,7 @@ const Habits = () => {
               <SelectItem value="hobbies">Hobbies</SelectItem>
             </SelectContent>
           </Select>
-          <Button>
+          <Button onClick={()=>{}}>
             <Plus className="w-4 h-4 mr-2" />
             New Habit
           </Button>
@@ -97,19 +107,19 @@ const Habits = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="glass-card p-6 text-center">
           <Trophy className="w-8 h-8 text-primary mx-auto mb-3" />
-          <p className="text-2xl font-bold">40</p>
+          <p className="text-2xl font-bold">{totalStreaks}</p>
           <p className="text-sm text-muted-foreground">Total Streaks</p>
         </Card>
         
         <Card className="glass-card p-6 text-center">
           <Target className="w-8 h-8 text-accent-mint mx-auto mb-3" />
-          <p className="text-2xl font-bold">84%</p>
-          <p className="text-sm text-muted-foreground">Overall Rate</p>
+          <p className="text-2xl font-bold">{habits.length}</p>
+          <p className="text-sm text-muted-foreground">Active Habits</p>
         </Card>
         
         <Card className="glass-card p-6 text-center">
           <Calendar className="w-8 h-8 text-accent-lilac mx-auto mb-3" />
-          <p className="text-2xl font-bold">28</p>
+          <p className="text-2xl font-bold">{bestStreak}</p>
           <p className="text-sm text-muted-foreground">Best Streak</p>
         </Card>
       </div>
@@ -119,91 +129,51 @@ const Habits = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Your Habits</h2>
           <span className="text-sm text-muted-foreground">
-            {filteredHabits.length} of {mockHabits.length} habits
+            {habits.length} habit{habits.length !== 1 ? 's' : ''}
           </span>
         </div>
-        {filteredHabits.map((habit) => (
-          <Card key={habit.id} className="glass-card p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-              {/* Habit Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{habit.name}</h3>
-                    <p className="text-sm text-muted-foreground">{habit.description}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryClass(habit.category)}`}>
-                    {habit.category}
-                  </span>
-                </div>
-
-                {/* Progress */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Completion Rate</span>
-                    <span className="text-sm text-muted-foreground">{habit.completionRate}%</span>
-                  </div>
-                  <Progress value={habit.completionRate} className="h-2" />
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                    <p className="text-xl font-bold text-primary">{habit.streak}</p>
-                    <p className="text-xs text-muted-foreground">Current Streak</p>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-accent-lilac">{habit.bestStreak}</p>
-                    <p className="text-xs text-muted-foreground">Best Streak</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Week Progress */}
-              <div className="lg:w-64">
-                <h4 className="text-sm font-medium mb-3 text-center">This Week</h4>
-                <div className="flex gap-2 justify-center">
-                  {habit.weekProgress.map((completed, index) => (
-                    <div key={index} className="text-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium mb-1 ${
-                        completed 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {completed ? '✓' : '○'}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{getDaysOfWeek()[index]}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        {habits.length === 0 ? (
+          <Card className="glass-card p-12 text-center">
+            <p className="text-muted-foreground">No habits found. Create your first habit to get started!</p>
           </Card>
-        ))}
-      </div>
+        ) : (
+          habits.map((habit) => (
+            <Card key={habit.id} className="glass-card p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                {/* Habit Info */}
+                <div className="flex-1">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">{habit.name}</h3>
+                      <p className="text-sm text-muted-foreground capitalize">{habit.category}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryClass(habit.category)}`}>
+                      {habit.category}
+                    </span>
+                  </div>
 
-      {/* Weekly Summary */}
-      <Card className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-4">Weekly Summary</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          <div className="category-mint p-4 rounded-lg">
-            <p className="text-2xl font-bold text-accent-foreground">23</p>
-            <p className="text-sm text-accent-foreground/80">Habits Completed</p>
-          </div>
-          <div className="category-lilac p-4 rounded-lg">
-            <p className="text-2xl font-bold text-accent-foreground">6</p>
-            <p className="text-sm text-accent-foreground/80">Perfect Days</p>
-          </div>
-          <div className="category-peach p-4 rounded-lg">
-            <p className="text-2xl font-bold text-accent-foreground">82%</p>
-            <p className="text-sm text-accent-foreground/80">Success Rate</p>
-          </div>
-          <div className="bg-secondary p-4 rounded-lg">
-            <p className="text-2xl font-bold text-foreground">+3</p>
-            <p className="text-sm text-muted-foreground">Streak Increase</p>
-          </div>
-        </div>
-      </Card>
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-4 text-center mt-4">
+                    <div>
+                      <p className="text-xl font-bold text-primary">{habit.streak}</p>
+                      <p className="text-xs text-muted-foreground">Current Streak</p>
+                    </div>
+                    <div>
+                      <Button 
+                        onClick={() => toggleHabit(habit.id)}
+                        variant={habit.completed ? "default" : "outline"}
+                        size="sm"
+                      >
+                        {habit.completed ? 'Completed Today' : 'Mark Complete'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };

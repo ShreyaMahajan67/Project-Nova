@@ -22,15 +22,13 @@ const AddMoodModal = ({ trigger, onAddMood }: AddMoodModalProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newMood = {
-      id: Math.random().toString(36).substr(2, 9),
+    const moodData = {
       mood: mood[0],
       energy: energy[0],
       notes,
       date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
     };
-    onAddMood?.(newMood);
+    onAddMood?.(moodData);
     setOpen(false);
     // Reset form
     setMood([7]);

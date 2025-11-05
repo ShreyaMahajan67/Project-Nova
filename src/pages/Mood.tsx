@@ -1,17 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, TrendingUp, Heart, Edit3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import { moodsApi } from '@/services/api';
+import { Mood } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
-const Mood = () => {
+const MoodPage = () => {
   const [currentMood, setCurrentMood] = useState(4);
   const [energyLevel, setEnergyLevel] = useState(3);
   const [journalEntry, setJournalEntry] = useState('');
+  const [moods, setMoods] = useState<Mood[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const moodEmojis = ['😭', '😞', '😐', '🙂', '😊', '😄', '🤩'];
   const moodLabels = ['Terrible', 'Bad', 'Okay', 'Good', 'Great', 'Amazing', 'Fantastic'];
+
+  useEffect(() => {
+    loadMoods();
+  }, []);
+
+  const loadMoods = async () => {
+    try {
+      setLoading(true);
+      const moodsData = await moodsApi.getMoods();
+      setMoods(moodsData);
+    } catch (error) {
+      console.error('Error loading moods:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load mood data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveMood = async () => {
+    try {
+      await moodsApi.createMood({
+        mood: currentMood + 1,
+        energy: energyLevel + 1,
+        notes: journalEntry,
+        date: new Date().toISOString().split('T')[0],
+      });
+      
+      toast({
+        title: "Success",
+        description: "Mood saved successfully",
+      });
+      
+      loadMoods();
+      setJournalEntry('');
+    } catch (error) {
+      console.error('Error saving mood:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save mood",
+        variant: "destructive",
+      });
+    }
+  };
 
   const mockHabits = [
     { name: 'Morning Meditation', completed: true },
@@ -87,7 +140,7 @@ const Mood = () => {
               </div>
             </div>
 
-            <Button className="w-full">
+            <Button className="w-full" onClick={saveMood}>
               Save Today's Mood
             </Button>
           </div>
@@ -153,10 +206,10 @@ const Mood = () => {
           onChange={(e) => setJournalEntry(e.target.value)}
           className="mb-4 min-h-24"
         />
-        <Button>Save Entry</Button>
+        <Button onClick={saveMood}>Save Entry</Button>
       </Card>
     </div>
   );
 };
 
-export default Mood;
+export default MoodPage;

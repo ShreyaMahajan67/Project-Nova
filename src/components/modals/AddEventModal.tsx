@@ -22,27 +22,29 @@ const AddEventModal = ({ trigger, onAddEvent }: AddEventModalProps) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [date, setDate] = useState<Date>();
-  const [time, setTime] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (title && category && date && time) {
-      const newEvent = {
-        id: Math.random().toString(36).substr(2, 9),
+    if (title && category && date && startTime && endTime) {
+      const eventData = {
         title,
         description,
         category,
         date: date.toISOString().split('T')[0],
-        time,
+        startTime,
+        endTime,
       };
-      onAddEvent?.(newEvent);
+      onAddEvent?.(eventData);
       setOpen(false);
       // Reset form
       setTitle('');
       setDescription('');
       setCategory('');
       setDate(undefined);
-      setTime('');
+      setStartTime('');
+      setEndTime('');
     }
   };
 
@@ -101,41 +103,52 @@ const AddEventModal = ({ trigger, onAddEvent }: AddEventModalProps) => {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="startTime">Start Time</Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
+              <Label htmlFor="endTime">End Time</Label>
               <Input
-                id="time"
+                id="endTime"
                 type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
                 required
               />
             </div>

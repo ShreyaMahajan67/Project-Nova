@@ -18,7 +18,7 @@ const Sidebar = () => {
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Home, label: 'Home', path: '/' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: Heart, label: 'Mood', path: '/mood' },
     { icon: Target, label: 'Habits', path: '/habits' },
